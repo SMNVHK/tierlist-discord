@@ -15,38 +15,49 @@ const firebaseConfig = {
   measurementId: "G-854G1PH0RF"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
+const initialItems = {
+  S: [],
+  A: [],
+  B: [],
+  C: [],
+  D: [],
+  E: [],
+  F: [],
+  unranked: ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'],
+};
+
 const TierList = () => {
-  const [items, setItems] = useState({
-    S: [],
-    A: [],
-    B: [],
-    C: [],
-    D: [],
-    E: [],
-    F: [],
-    unranked: ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'],
-  });
+  const [items, setItems] = useState(initialItems);
 
   useEffect(() => {
     const itemsRef = ref(database, 'items');
     onValue(itemsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        setItems(data);
+        // Ensure all categories exist
+        setItems({...initialItems, ...data});
+      } else {
+        // If no data, initialize with default structure
+        set(itemsRef, initialItems);
       }
     });
   }, []);
 
   const onDragEnd = (result) => {
     if (!result.destination) return;
+    
     const { source, destination } = result;
-    const newItems = { ...items };
+    const newItems = {...items};
+    
+    // Remove from source
     const [reorderedItem] = newItems[source.droppableId].splice(source.index, 1);
+    
+    // Add to destination
     newItems[destination.droppableId].splice(destination.index, 0, reorderedItem);
+    
     setItems(newItems);
     set(ref(database, 'items'), newItems);
   };
