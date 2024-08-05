@@ -26,27 +26,29 @@ h1 {
 }
 
 .tier-items {
-  flex-grow: 1;
-  min-height: 120px; /* Augmenté pour accommoder les éléments zoomés */
+  min-height: 120px;
   background-color: #f0f0f0;
   display: flex;
   align-items: center;
   padding: 5px;
-  overflow: visible; /* Permet aux éléments zoomés de déborder */
+  overflow: visible;
 }
 
 .tier-item {
   background-color: white;
   border: 1px solid #ddd;
-  padding: 5px 10px;
+  padding: 5px;
   margin-right: 5px;
   cursor: move;
   transition: all 0.3s ease;
   position: relative;
+  width: 100px; /* Taille de base fixe */
+  height: 100px; /* Taille de base fixe */
 }
 
 .tier-item.zoomed {
-  transform: scale(3);
+  width: 300px; /* Taille agrandie au survol */
+  height: 300px; /* Taille agrandie au survol */
   z-index: 1000;
 }
 
@@ -68,9 +70,9 @@ h1 {
 }
 
 .item-image {
-  max-width: 100px;
-  max-height: 100px;
-  object-fit: contain; /* Changé de 'cover' à 'contain' pour mieux voir l'image entière */
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .tier-item.zoomed .item-image {
