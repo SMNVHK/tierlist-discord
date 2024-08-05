@@ -26,7 +26,13 @@ const initialItems = {
   D: [],
   E: [],
   F: [],
-  unranked: ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'],
+  unranked: [
+    { id: 'item1', content: 'Item 1' },
+    { id: 'item2', content: 'Item 2' },
+    { id: 'item3', content: 'Item 3' },
+    { id: 'item4', content: 'Item 4' },
+    { id: 'item5', content: 'Item 5' },
+  ],
 };
 
 const TierList = () => {
@@ -37,8 +43,12 @@ const TierList = () => {
     onValue(itemsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Ensure all categories exist
-        setItems({...initialItems, ...data});
+        // Merge incoming data with existing structure
+        const mergedItems = {...initialItems};
+        Object.keys(data).forEach(tier => {
+          mergedItems[tier] = [...new Set([...mergedItems[tier], ...data[tier]])];
+        });
+        setItems(mergedItems);
       } else {
         // If no data, initialize with default structure
         set(itemsRef, initialItems);
@@ -50,7 +60,7 @@ const TierList = () => {
     if (!result.destination) return;
     
     const { source, destination } = result;
-    const newItems = {...items};
+    const newItems = JSON.parse(JSON.stringify(items));
     
     // Remove from source
     const [reorderedItem] = newItems[source.droppableId].splice(source.index, 1);
@@ -58,6 +68,11 @@ const TierList = () => {
     // Add to destination
     newItems[destination.droppableId].splice(destination.index, 0, reorderedItem);
     
+    // Remove duplicates
+    Object.keys(newItems).forEach(tier => {
+      newItems[tier] = [...new Set(newItems[tier].map(JSON.stringify))].map(JSON.parse);
+    });
+
     setItems(newItems);
     set(ref(database, 'items'), newItems);
   };
@@ -90,7 +105,7 @@ const TierList = () => {
                   className="tier-items"
                 >
                   {tierItems.map((item, index) => (
-                    <Draggable key={item} draggableId={item} index={index}>
+                    <Draggable key={item.id} draggableId={item.id} index={index}>
                       {(provided) => (
                         <div
                           ref={provided.innerRef}
@@ -98,7 +113,7 @@ const TierList = () => {
                           {...provided.dragHandleProps}
                           className="tier-item"
                         >
-                          {item}
+                          {item.content}
                         </div>
                       )}
                     </Draggable>
