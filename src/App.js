@@ -20,29 +20,31 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
 const initialTiers = {
-  S: [], A: [], B: [], C: [], D: [], E: [], F: [], unranked: []
+  S: { name: 'S', items: [] },
+  A: { name: 'A', items: [] },
+  B: { name: 'B', items: [] },
+  C: { name: 'C', items: [] },
+  D: { name: 'D', items: [] },
+  E: { name: 'E', items: [] },
+  F: { name: 'F', items: [] },
+  unranked: { name: 'Unranked', items: [] }
 };
 
 function App() {
-  const [items, setItems] = useState(initialTiers);
+  const [tiers, setTiers] = useState(initialTiers);
   const [newItemText, setNewItemText] = useState('');
   const [newItemImage, setNewItemImage] = useState('');
-  const [zoomedItemId, setZoomedItemId] = useState(null);
+  const [editingTier, setEditingTier] = useState(null);
 
   useEffect(() => {
-    const itemsRef = ref(database, 'items');
-    onValue(itemsRef, (snapshot) => {
+    const tiersRef = ref(database, 'tiers');
+    onValue(tiersRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const mergedData = { ...initialTiers, ...data };
-        // Dédupliquer les items
-        Object.keys(mergedData).forEach(tier => {
-          mergedData[tier] = [...new Set(mergedData[tier].map(JSON.stringify))].map(JSON.parse);
-        });
-        setItems(mergedData);
+        setTiers(data);
       } else {
-        setItems(initialTiers);
-        set(itemsRef, initialTiers);
+        setTiers(initialTiers);
+        set(tiersRef, initialTiers);
       }
     });
   }, []);
@@ -51,21 +53,12 @@ function App() {
     if (!result.destination) return;
     
     const { source, destination } = result;
-    const newItems = JSON.parse(JSON.stringify(items));
+    const newTiers = JSON.parse(JSON.stringify(tiers));
+    const [reorderedItem] = newTiers[source.droppableId].items.splice(source.index, 1);
+    newTiers[destination.droppableId].items.splice(destination.index, 0, reorderedItem);
     
-    // Retirer l'item de la source
-    const [reorderedItem] = newItems[source.droppableId].splice(source.index, 1);
-    
-    // Ajouter l'item à la destination
-    newItems[destination.droppableId].splice(destination.index, 0, reorderedItem);
-    
-    // Dédupliquer les items dans toutes les catégories
-    Object.keys(newItems).forEach(tier => {
-      newItems[tier] = [...new Set(newItems[tier].map(JSON.stringify))].map(JSON.parse);
-    });
-
-    setItems(newItems);
-    set(ref(database, 'items'), newItems);
+    setTiers(newTiers);
+    set(ref(database, 'tiers'), newTiers);
   };
 
   const addNewItem = () => {
@@ -77,17 +70,30 @@ function App() {
       image: newItemImage.trim() || null
     };
 
-    const newItems = {...items, unranked: [...items.unranked, newItem]};
-    setItems(newItems);
-    set(ref(database, 'items'), newItems);
+    const newTiers = {...tiers};
+    newTiers.unranked.items.push(newItem);
+    setTiers(newTiers);
+    set(ref(database, 'tiers'), newTiers);
 
     setNewItemText('');
     setNewItemImage('');
   };
 
   const resetTierList = () => {
-    setItems(initialTiers);
-    set(ref(database, 'items'), initialTiers);
+    setTiers(initialTiers);
+    set(ref(database, 'tiers'), initialTiers);
+  };
+
+  const startEditingTier = (tierId) => {
+    setEditingTier(tierId);
+  };
+
+  const finishEditingTier = (tierId, newName) => {
+    const newTiers = {...tiers};
+    newTiers[tierId].name = newName;
+    setTiers(newTiers);
+    set(ref(database, 'tiers'), newTiers);
+    setEditingTier(null);
   };
 
   const tierColors = {
@@ -118,28 +124,40 @@ function App() {
         </div>
 
         <DragDropContext onDragEnd={onDragEnd}>
-          {Object.entries(items).map(([tier, tierItems]) => (
-            <div key={tier} className="tier">
-              <div className="tier-label" style={{ backgroundColor: tierColors[tier] }}>
-                {tier}
+          {Object.entries(tiers).map(([tierId, tier]) => (
+            <div key={tierId} className="tier">
+              <div 
+                className="tier-label" 
+                style={{ backgroundColor: tierColors[tierId] }}
+                onClick={() => startEditingTier(tierId)}
+              >
+                {editingTier === tierId ? (
+                  <input
+                    type="text"
+                    value={tier.name}
+                    onChange={(e) => finishEditingTier(tierId, e.target.value)}
+                    onBlur={() => setEditingTier(null)}
+                    autoFocus
+                  />
+                ) : (
+                  tier.name
+                )}
               </div>
-              <Droppable droppableId={tier} direction="horizontal">
+              <Droppable droppableId={tierId} direction="horizontal">
                 {(provided) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className="tier-items"
                   >
-                    {tierItems.map((item, index) => (
+                    {tier.items.map((item, index) => (
                       <Draggable key={item.id} draggableId={item.id} index={index}>
                         {(provided) => (
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className={`tier-item ${zoomedItemId === item.id ? 'zoomed' : ''}`}
-                            onMouseEnter={() => setZoomedItemId(item.id)}
-                            onMouseLeave={() => setZoomedItemId(null)}
+                            className="tier-item"
                           >
                             {item.image ? (
                               <img src={item.image} alt={item.content} className="item-image" />
