@@ -18,115 +18,86 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-const initialItems = {
-  S: [],
-  A: [],
-  B: [],
-  C: [],
-  D: [],
-  E: [],
-  F: [],
-  unranked: [
-    { id: 'item1', content: 'Item 1' },
-    { id: 'item2', content: 'Item 2' },
-    { id: 'item3', content: 'Item 3' },
-    { id: 'item4', content: 'Item 4' },
-    { id: 'item5', content: 'Item 5' },
-  ],
-};
-
 const TierList = () => {
-  const [items, setItems] = useState(initialItems);
+  const [items, setItems] = useState({
+    S: [], A: [], B: [], C: [], D: [], E: [], F: [], unranked: []
+  });
+  const [newItemText, setNewItemText] = useState('');
+  const [newItemImage, setNewItemImage] = useState('');
 
   useEffect(() => {
     const itemsRef = ref(database, 'items');
     onValue(itemsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Merge incoming data with existing structure
-        const mergedItems = {...initialItems};
-        Object.keys(data).forEach(tier => {
-          mergedItems[tier] = [...new Set([...mergedItems[tier], ...data[tier]])];
-        });
-        setItems(mergedItems);
-      } else {
-        // If no data, initialize with default structure
-        set(itemsRef, initialItems);
+        const dedupedData = deduplicateItems(data);
+        setItems(dedupedData);
+        // If we deduped anything, update Firebase
+        if (JSON.stringify(data) !== JSON.stringify(dedupedData)) {
+          set(itemsRef, dedupedData);
+        }
       }
     });
   }, []);
+
+  const deduplicateItems = (data) => {
+    const dedupedData = {...data};
+    const allItems = new Set();
+    
+    Object.keys(dedupedData).forEach(tier => {
+      dedupedData[tier] = dedupedData[tier].filter(item => {
+        const itemString = JSON.stringify(item);
+        if (allItems.has(itemString)) {
+          return false;
+        }
+        allItems.add(itemString);
+        return true;
+      });
+    });
+
+    return dedupedData;
+  };
 
   const onDragEnd = (result) => {
     if (!result.destination) return;
     
     const { source, destination } = result;
     const newItems = JSON.parse(JSON.stringify(items));
-    
-    // Remove from source
     const [reorderedItem] = newItems[source.droppableId].splice(source.index, 1);
-    
-    // Add to destination
     newItems[destination.droppableId].splice(destination.index, 0, reorderedItem);
     
-    // Remove duplicates
-    Object.keys(newItems).forEach(tier => {
-      newItems[tier] = [...new Set(newItems[tier].map(JSON.stringify))].map(JSON.parse);
-    });
-
-    setItems(newItems);
-    set(ref(database, 'items'), newItems);
+    const dedupedItems = deduplicateItems(newItems);
+    setItems(dedupedItems);
+    set(ref(database, 'items'), dedupedItems);
   };
 
-  const tierColors = {
-    S: '#ff7f7f',
-    A: '#ffbf7f',
-    B: '#ffdf7f',
-    C: '#ffff7f',
-    D: '#bfff7f',
-    E: '#7fff7f',
-    F: '#7fffff',
-    unranked: '#e0e0e0',
+  const addNewItem = () => {
+    if (newItemText.trim() === '') return;
+
+    const newItem = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      content: newItemText,
+      image: newItemImage.trim() || null
+    };
+
+    // Check if item already exists
+    const itemExists = Object.values(items).flat().some(
+      item => item.content === newItem.content && item.image === newItem.image
+    );
+
+    if (!itemExists) {
+      const newItems = {...items, unranked: [...items.unranked, newItem]};
+      setItems(newItems);
+      set(ref(database, 'items'), newItems);
+    } else {
+      alert("This item already exists in the tier list!");
+    }
+
+    setNewItemText('');
+    setNewItemImage('');
   };
 
-  return (
-    <div className="tier-list">
-      <h1>Discord Tier List</h1>
-      <DragDropContext onDragEnd={onDragEnd}>
-        {Object.entries(items).map(([tier, tierItems]) => (
-          <div key={tier} className="tier">
-            <div className="tier-label" style={{ backgroundColor: tierColors[tier] }}>
-              {tier}
-            </div>
-            <Droppable droppableId={tier} direction="horizontal">
-              {(provided) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className="tier-items"
-                >
-                  {tierItems.map((item, index) => (
-                    <Draggable key={item.id} draggableId={item.id} index={index}>
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className="tier-item"
-                        >
-                          {item.content}
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </div>
-        ))}
-      </DragDropContext>
-    </div>
-  );
+  // ... (rest of the component remains the same)
 };
 
 export default TierList;

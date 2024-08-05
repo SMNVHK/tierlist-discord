@@ -41,3 +41,26 @@ h1 {
   margin-right: 5px;
   cursor: move;
 }
+
+.add-item-form {
+  margin-bottom: 20px;
+}
+
+.add-item-form input {
+  margin-right: 10px;
+  padding: 5px;
+}
+
+.add-item-form button {
+  padding: 5px 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.item-image {
+  max-width: 100px;
+  max-height: 100px;
+  object-fit: cover;
+}
