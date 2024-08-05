@@ -64,3 +64,17 @@ h1 {
   max-height: 100px;
   object-fit: cover;
 }
+
+.tier-item {
+  transition: transform 0.3s ease;
+}
+
+.tier-item.zoomed {
+  transform: scale(1.5);
+  z-index: 1000;
+}
+
+.reset-button {
+  margin-left: 10px;
+  background-color: #f44336;
+}

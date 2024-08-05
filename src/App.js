@@ -19,60 +19,44 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
+const initialTiers = {
+  S: [], A: [], B: [], C: [], D: [], E: [], F: [], unranked: []
+};
+
 function App() {
-  const [items, setItems] = useState({
-    S: [], A: [], B: [], C: [], D: [], E: [], F: [], unranked: []
-  });
+  const [items, setItems] = useState(initialTiers);
   const [newItemText, setNewItemText] = useState('');
   const [newItemImage, setNewItemImage] = useState('');
+  const [zoomedItemId, setZoomedItemId] = useState(null);
 
   useEffect(() => {
     const itemsRef = ref(database, 'items');
     onValue(itemsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const dedupedData = deduplicateItems(data);
-        setItems(dedupedData);
-        if (JSON.stringify(data) !== JSON.stringify(dedupedData)) {
-          set(itemsRef, dedupedData);
-        }
+        const mergedData = { ...initialTiers, ...data };
+        setItems(mergedData);
+      } else {
+        setItems(initialTiers);
+        set(itemsRef, initialTiers);
       }
     });
   }, []);
-
-  const deduplicateItems = (data) => {
-    const dedupedData = {...data};
-    const allItems = new Set();
-    
-    Object.keys(dedupedData).forEach(tier => {
-      dedupedData[tier] = dedupedData[tier].filter(item => {
-        const itemString = JSON.stringify(item);
-        if (allItems.has(itemString)) {
-          return false;
-        }
-        allItems.add(itemString);
-        return true;
-      });
-    });
-
-    return dedupedData;
-  };
 
   const onDragEnd = (result) => {
     if (!result.destination) return;
     
     const { source, destination } = result;
-    const newItems = JSON.parse(JSON.stringify(items));
+    const newItems = { ...items };
     const [reorderedItem] = newItems[source.droppableId].splice(source.index, 1);
     newItems[destination.droppableId].splice(destination.index, 0, reorderedItem);
     
-    const dedupedItems = deduplicateItems(newItems);
-    setItems(dedupedItems);
-    set(ref(database, 'items'), dedupedItems);
+    setItems(newItems);
+    set(ref(database, 'items'), newItems);
   };
 
   const addNewItem = () => {
-    if (newItemText.trim() === '') return;
+    if (newItemText.trim() === '' && newItemImage.trim() === '') return;
 
     const newItem = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -80,20 +64,17 @@ function App() {
       image: newItemImage.trim() || null
     };
 
-    const itemExists = Object.values(items).flat().some(
-      item => item.content === newItem.content && item.image === newItem.image
-    );
-
-    if (!itemExists) {
-      const newItems = {...items, unranked: [...items.unranked, newItem]};
-      setItems(newItems);
-      set(ref(database, 'items'), newItems);
-    } else {
-      alert("This item already exists in the tier list!");
-    }
+    const newItems = {...items, unranked: [...items.unranked, newItem]};
+    setItems(newItems);
+    set(ref(database, 'items'), newItems);
 
     setNewItemText('');
     setNewItemImage('');
+  };
+
+  const resetTierList = () => {
+    setItems(initialTiers);
+    set(ref(database, 'items'), initialTiers);
   };
 
   const tierColors = {
@@ -120,6 +101,7 @@ function App() {
             placeholder="Enter image URL (optional)"
           />
           <button onClick={addNewItem}>Add Item</button>
+          <button onClick={resetTierList} className="reset-button">Reset Tier List</button>
         </div>
 
         <DragDropContext onDragEnd={onDragEnd}>
@@ -142,7 +124,9 @@ function App() {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className="tier-item"
+                            className={`tier-item ${zoomedItemId === item.id ? 'zoomed' : ''}`}
+                            onMouseEnter={() => setZoomedItemId(item.id)}
+                            onMouseLeave={() => setZoomedItemId(null)}
                           >
                             {item.image ? (
                               <img src={item.image} alt={item.content} className="item-image" />
