@@ -6,14 +6,7 @@ import './App.css';
 import './TierList.css';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDCt4bLWo8OVYb7dO5Cjyin6VKa9czjuoo",
-  authDomain: "bot-discord-c13ff.firebaseapp.com",
-  databaseURL: "https://bot-discord-c13ff-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "bot-discord-c13ff",
-  storageBucket: "bot-discord-c13ff.appspot.com",
-  messagingSenderId: "276543551497",
-  appId: "1:276543551497:web:882ebf4a639941e77da0d8",
-  measurementId: "G-854G1PH0RF"
+  // Votre configuration Firebase ici
 };
 
 const app = initializeApp(firebaseConfig);
@@ -35,6 +28,10 @@ function App() {
       const data = snapshot.val();
       if (data) {
         const mergedData = { ...initialTiers, ...data };
+        // Dédupliquer les items
+        Object.keys(mergedData).forEach(tier => {
+          mergedData[tier] = [...new Set(mergedData[tier].map(JSON.stringify))].map(JSON.parse);
+        });
         setItems(mergedData);
       } else {
         setItems(initialTiers);
@@ -47,10 +44,19 @@ function App() {
     if (!result.destination) return;
     
     const { source, destination } = result;
-    const newItems = { ...items };
+    const newItems = JSON.parse(JSON.stringify(items));
+    
+    // Retirer l'item de la source
     const [reorderedItem] = newItems[source.droppableId].splice(source.index, 1);
+    
+    // Ajouter l'item à la destination
     newItems[destination.droppableId].splice(destination.index, 0, reorderedItem);
     
+    // Dédupliquer les items dans toutes les catégories
+    Object.keys(newItems).forEach(tier => {
+      newItems[tier] = [...new Set(newItems[tier].map(JSON.stringify))].map(JSON.parse);
+    });
+
     setItems(newItems);
     set(ref(database, 'items'), newItems);
   };

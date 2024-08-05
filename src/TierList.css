@@ -27,11 +27,12 @@ h1 {
 
 .tier-items {
   flex-grow: 1;
-  min-height: 40px;
+  min-height: 120px; /* Augmenté pour accommoder les éléments zoomés */
   background-color: #f0f0f0;
   display: flex;
   align-items: center;
   padding: 5px;
+  overflow: visible; /* Permet aux éléments zoomés de déborder */
 }
 
 .tier-item {
@@ -40,6 +41,13 @@ h1 {
   padding: 5px 10px;
   margin-right: 5px;
   cursor: move;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tier-item.zoomed {
+  transform: scale(3);
+  z-index: 1000;
 }
 
 .add-item-form {
@@ -62,16 +70,12 @@ h1 {
 .item-image {
   max-width: 100px;
   max-height: 100px;
-  object-fit: cover;
+  object-fit: contain; /* Changé de 'cover' à 'contain' pour mieux voir l'image entière */
 }
 
-.tier-item {
-  transition: transform 0.3s ease;
-}
-
-.tier-item.zoomed {
-  transform: scale(1.5);
-  z-index: 1000;
+.tier-item.zoomed .item-image {
+  max-width: none;
+  max-height: none;
 }
 
 .reset-button {
