@@ -6,7 +6,14 @@ import './App.css';
 import './TierList.css';
 
 const firebaseConfig = {
-  // Votre configuration Firebase ici
+  apiKey: "AIzaSyDCt4bLWo8OVYb7dO5Cjyin6VKa9czjuoo",
+  authDomain: "bot-discord-c13ff.firebaseapp.com",
+  databaseURL: "https://bot-discord-c13ff-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "bot-discord-c13ff",
+  storageBucket: "bot-discord-c13ff.appspot.com",
+  messagingSenderId: "276543551497",
+  appId: "1:276543551497:web:882ebf4a639941e77da0d8",
+  measurementId: "G-854G1PH0RF"
 };
 
 const app = initializeApp(firebaseConfig);
