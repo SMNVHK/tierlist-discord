@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, set } from "firebase/database";
+import './App.css';
 import './TierList.css';
 
 const firebaseConfig = {
@@ -18,7 +19,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-const TierList = () => {
+function App() {
   const [items, setItems] = useState({
     S: [], A: [], B: [], C: [], D: [], E: [], F: [], unranked: []
   });
@@ -32,7 +33,6 @@ const TierList = () => {
       if (data) {
         const dedupedData = deduplicateItems(data);
         setItems(dedupedData);
-        // If we deduped anything, update Firebase
         if (JSON.stringify(data) !== JSON.stringify(dedupedData)) {
           set(itemsRef, dedupedData);
         }
@@ -80,7 +80,6 @@ const TierList = () => {
       image: newItemImage.trim() || null
     };
 
-    // Check if item already exists
     const itemExists = Object.values(items).flat().some(
       item => item.content === newItem.content && item.image === newItem.image
     );
@@ -97,7 +96,73 @@ const TierList = () => {
     setNewItemImage('');
   };
 
-  // ... (rest of the component remains the same)
-};
+  const tierColors = {
+    S: '#ff7f7f', A: '#ffbf7f', B: '#ffdf7f', C: '#ffff7f',
+    D: '#bfff7f', E: '#7fff7f', F: '#7fffff', unranked: '#e0e0e0',
+  };
 
-export default TierList;
+  return (
+    <div className="App">
+      <div className="tier-list">
+        <h1>Discord Tier List</h1>
+        
+        <div className="add-item-form">
+          <input
+            type="text"
+            value={newItemText}
+            onChange={(e) => setNewItemText(e.target.value)}
+            placeholder="Enter item text"
+          />
+          <input
+            type="text"
+            value={newItemImage}
+            onChange={(e) => setNewItemImage(e.target.value)}
+            placeholder="Enter image URL (optional)"
+          />
+          <button onClick={addNewItem}>Add Item</button>
+        </div>
+
+        <DragDropContext onDragEnd={onDragEnd}>
+          {Object.entries(items).map(([tier, tierItems]) => (
+            <div key={tier} className="tier">
+              <div className="tier-label" style={{ backgroundColor: tierColors[tier] }}>
+                {tier}
+              </div>
+              <Droppable droppableId={tier} direction="horizontal">
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className="tier-items"
+                  >
+                    {tierItems.map((item, index) => (
+                      <Draggable key={item.id} draggableId={item.id} index={index}>
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className="tier-item"
+                          >
+                            {item.image ? (
+                              <img src={item.image} alt={item.content} className="item-image" />
+                            ) : (
+                              item.content
+                            )}
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </div>
+          ))}
+        </DragDropContext>
+      </div>
+    </div>
+  );
+}
+
+export default App;
