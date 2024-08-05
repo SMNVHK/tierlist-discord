@@ -1,0 +1,43 @@
+.tier-list {
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.tier {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.tier-label {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #333;
+}
+
+.tier-items {
+  flex-grow: 1;
+  min-height: 40px;
+  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  padding: 5px;
+}
+
+.tier-item {
+  background-color: white;
+  border: 1px solid #ddd;
+  padding: 5px 10px;
+  margin-right: 5px;
+  cursor: move;
+}
