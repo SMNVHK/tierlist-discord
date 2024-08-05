@@ -31,42 +31,26 @@ const initialTiers = {
 };
 
 function App() {
-  const [tiers, setTiers] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [tiers, setTiers] = useState(initialTiers);
   const [newItemText, setNewItemText] = useState('');
   const [newItemImage, setNewItemImage] = useState('');
+  const [editingTier, setEditingTier] = useState(null);
 
   useEffect(() => {
     const tiersRef = ref(database, 'tiers');
-    const unsubscribe = onValue(tiersRef, (snapshot) => {
-      setLoading(true);
-      try {
-        const data = snapshot.val();
-        if (data) {
-          setTiers(data);
-        } else {
-          setTiers(initialTiers);
-          set(tiersRef, initialTiers);
-        }
-        setError(null);
-      } catch (e) {
-        console.error("Error loading data:", e);
-        setError("Failed to load data. Please try refreshing the page.");
-      } finally {
-        setLoading(false);
+    onValue(tiersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setTiers(data);
+      } else {
+        setTiers(initialTiers);
+        set(tiersRef, initialTiers);
       }
-    }, (error) => {
-      console.error("Database error:", error);
-      setError("Failed to connect to the database. Please check your internet connection and try again.");
-      setLoading(false);
     });
-
-    return () => unsubscribe();
   }, []);
 
   const onDragEnd = (result) => {
-    if (!result.destination || !tiers) return;
+    if (!result.destination) return;
     
     const { source, destination } = result;
     const newTiers = JSON.parse(JSON.stringify(tiers));
@@ -100,9 +84,22 @@ function App() {
     set(ref(database, 'tiers'), initialTiers);
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!tiers) return <div>No data available</div>;
+  const startEditingTier = (tierId) => {
+    setEditingTier(tierId);
+  };
+
+  const finishEditingTier = (tierId, newName) => {
+    const newTiers = {...tiers};
+    newTiers[tierId].name = newName;
+    setTiers(newTiers);
+    set(ref(database, 'tiers'), newTiers);
+    setEditingTier(null);
+  };
+
+  const tierColors = {
+    S: '#ff7f7f', A: '#ffbf7f', B: '#ffdf7f', C: '#ffff7f',
+    D: '#bfff7f', E: '#7fff7f', F: '#7fffff', unranked: '#e0e0e0',
+  };
 
   return (
     <div className="App">
@@ -129,8 +126,22 @@ function App() {
         <DragDropContext onDragEnd={onDragEnd}>
           {Object.entries(tiers).map(([tierId, tier]) => (
             <div key={tierId} className="tier">
-              <div className="tier-label" style={{ backgroundColor: tierColors[tierId] }}>
-                {tier.name}
+              <div 
+                className="tier-label" 
+                style={{ backgroundColor: tierColors[tierId] }}
+                onClick={() => startEditingTier(tierId)}
+              >
+                {editingTier === tierId ? (
+                  <input
+                    type="text"
+                    value={tier.name}
+                    onChange={(e) => finishEditingTier(tierId, e.target.value)}
+                    onBlur={() => setEditingTier(null)}
+                    autoFocus
+                  />
+                ) : (
+                  tier.name
+                )}
               </div>
               <Droppable droppableId={tierId} direction="horizontal">
                 {(provided) => (
@@ -168,10 +179,5 @@ function App() {
     </div>
   );
 }
-
-const tierColors = {
-  S: '#ff7f7f', A: '#ffbf7f', B: '#ffdf7f', C: '#ffff7f',
-  D: '#bfff7f', E: '#7fff7f', F: '#7fffff', unranked: '#e0e0e0',
-};
 
 export default App;
