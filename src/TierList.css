@@ -1,7 +1,5 @@
 .tier-list {
-  font-family: Arial, sans-serif;
-  max-width: 800px;
-  margin: 0 auto;
+  max-width: 100%;
   padding: 20px;
 }
 
@@ -12,9 +10,8 @@ h1 {
 
 .tier {
   display: flex;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
 }
-
 .tier-label {
   width: 30px;
   height: 30px;
@@ -27,12 +24,11 @@ h1 {
 
 .tier-items {
   flex-grow: 1;
-  min-height: 120px;
-  background-color: #f0f0f0;
+  min-height: 60px;
+  padding: 5px;
   display: flex;
   align-items: center;
-  padding: 5px;
-  overflow: visible;
+  flex-wrap: wrap;
 }
 
 .tier-item {

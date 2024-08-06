@@ -5,26 +5,17 @@ import { getDatabase, ref, onValue, set } from "firebase/database";
 import './App.css';
 import './TierList.css';
 
+// Move this to a separate config file (e.g., firebaseConfig.js)
 const firebaseConfig = {
-
-  apiKey: "AIzaSyDCt4bLWo8OVYb7dO5Cjyin6VKa9czjuoo",
-
-  authDomain: "bot-discord-c13ff.firebaseapp.com",
-
-  databaseURL: "https://bot-discord-c13ff-default-rtdb.europe-west1.firebasedatabase.app",
-
-  projectId: "bot-discord-c13ff",
-
-  storageBucket: "bot-discord-c13ff.appspot.com",
-
-  messagingSenderId: "276543551497",
-
-  appId: "1:276543551497:web:882ebf4a639941e77da0d8",
-
-  measurementId: "G-854G1PH0RF"
-
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
-
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
@@ -38,6 +29,11 @@ const initialItems = {
   E: [],
   F: [],
   unranked: ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'],
+};
+
+const tierColors = {
+  S: '#ff7f7f', A: '#ffbf7f', B: '#ffdf7f', C: '#ffff7f',
+  D: '#bfff7f', E: '#7fff7f', F: '#7fffff', unranked: '#e0e0e0',
 };
 
 function App() {
@@ -90,11 +86,6 @@ function App() {
     set(ref(database, 'items'), initialItems);
   };
 
-  const tierColors = {
-    S: '#ff7f7f', A: '#ffbf7f', B: '#ffdf7f', C: '#ffff7f',
-    D: '#bfff7f', E: '#7fff7f', F: '#7fffff', unranked: '#e0e0e0',
-  };
-
   return (
     <div className="App">
       <div className="tier-list">
@@ -119,12 +110,12 @@ function App() {
 
         <DragDropContext onDragEnd={onDragEnd}>
           {Object.entries(items).map(([tier, tierItems]) => (
-            <div key={tier} className="tier">
-              <div className="tier-label" style={{ backgroundColor: tierColors[tier] }}>
-                {tier}
-              </div>
-              <Droppable droppableId={tier} direction="horizontal">
-                {(provided) => (
+            <Droppable key={tier} droppableId={tier} direction="horizontal">
+              {(provided) => (
+                <div className="tier">
+                  <div className="tier-label" style={{ backgroundColor: tierColors[tier] }}>
+                    {tier}
+                  </div>
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
@@ -152,9 +143,9 @@ function App() {
                     ))}
                     {provided.placeholder}
                   </div>
-                )}
-              </Droppable>
-            </div>
+                </div>
+              )}
+            </Droppable>
           ))}
         </DragDropContext>
       </div>
